@@ -15,7 +15,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('verifyEmail')->everyFiveMinutes();
+        $schedule->command('ReminderWhenToReturnBook')->dailyAt('00:00');
+        $schedule->command('onlineLibrary')->hourly();
+        $schedule->command('OfflineLibrary')->hourly();
     }
 
     /**

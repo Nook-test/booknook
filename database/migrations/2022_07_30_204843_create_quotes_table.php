@@ -16,10 +16,10 @@ return new class extends Migration
         Schema::create('quotes', function (Blueprint $table) {
             $table->increments('id');
             $table->text('quote');
-            $table->integer('user_id')->unsigned();
-            $table->integer('book_id')->unsigned();
+            $table->integer('user_id')->unsigned()->nullable();
+            $table->integer('book_id')->unsigned()->nullable();
             $table->foreign('user_id')->references('id')->on('users')->OnDelete('cascade');
-            $table->foreign('book_id')->references('id')->on('books')->OnDelete('cascade');
+            $table->foreign('book_id')->references('id')->on('library_books')->OnDelete('cascade');
             $table->timestamps();
         });
     }

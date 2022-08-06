@@ -18,4 +18,8 @@ class Address extends Model
         'near',
         'details'
     ];
+
+    public function user(){
+        $this->belongsTo('App\User');
+    }
 }

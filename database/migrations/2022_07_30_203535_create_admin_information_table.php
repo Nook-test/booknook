@@ -16,11 +16,11 @@ return new class extends Migration
         Schema::create('admin_information', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
-            $table->string('firstName');
-            $table->string('middleName');
-            $table->string('lastName');
-            $table->string('libraryName');
-            $table->string('phone');
+            $table->string('first_name');
+            $table->string('middle_name');
+            $table->string('last_name');
+            $table->string('library_name');
+            $table->bigInteger('phone');
             $table->time('open_time');
             $table->time('close_time');
             $table->string('image')->nullable();

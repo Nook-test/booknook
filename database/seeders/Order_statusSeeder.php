@@ -15,9 +15,10 @@ class Order_statusSeeder extends Seeder
     public function run()
     {
         $status = [
-            ['status' => 'delivery in progress'],
-            ['status' => 'delivered'],
-            ['status' => 'canceled']
+            ['status' => 'Processing'],
+            ['status' => 'Delivery in progress'],
+            ['status' => 'Delivered'],
+            ['status' => 'Canceled']
         ];
         \App\Models\OrderStatus::insert($status);
     }

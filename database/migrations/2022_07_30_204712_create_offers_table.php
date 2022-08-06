@@ -19,9 +19,9 @@ return new class extends Migration
             $table->string('title');
             $table->integer('totalPrice');
             $table->integer('quantity');
-            $table->boolean('deleted')->default(0);
             $table->foreign('library_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

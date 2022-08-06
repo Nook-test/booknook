@@ -20,9 +20,10 @@ return new class extends Migration
             $table->integer('selling_price');
             $table->string('state');
             $table->integer('quantity')->default(0);
-            $table->boolean('deleted')->default(0);
-            $table->foreign('book_id')->references('id')->on('books')->onDelete('cascade');
+            $table->double('rate')->default(0);
+            $table->foreign('book_id')->references('id')->on('books');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

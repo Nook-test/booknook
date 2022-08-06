@@ -16,9 +16,9 @@ return new class extends Migration
         Schema::create('customer_information', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
-            $table->string('firstName');
-            $table->string('middleName');
-            $table->string('lastName');
+            $table->string('first_name');
+            $table->string('middle_name');
+            $table->string('last_name');
             $table->string('gender');
             $table->date('birth_day');
             $table->string('phone');

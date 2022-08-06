@@ -15,14 +15,23 @@ class CategorySeeder extends Seeder
     public function run()
     {
         $categories = [
-            ['name' => 'classics'],
+            ['name' => 'Classics'],
             ['name' => 'Action'],
             ['name' => 'Horror'],
             ['name' => 'Crime'],
-            ['name' => ' true crime'],
-            ['name' => 'fantasy'],
-            ['name' => 'humor'],
-            ['name' => 'romance']
+            ['name' => 'True Crime'],
+            ['name' => 'Fantasy'],
+            ['name' => 'Historical Fiction'],
+            ['name' => 'Adventure'],
+            ['name' => 'Graphic Novel'],
+            ['name' => 'Comic Book'],
+            ['name' => 'Humor'],
+            ['name' => 'Mystery'],
+            ['name' => 'Romance'],
+            ['name' => 'Poetry'],
+            ['name' => 'Cookbooks'],
+            ['name' => 'Science Fiction'],
+            ['name' => 'Other']
         ];
         \App\Models\Category::insert($categories);
     }

@@ -22,7 +22,6 @@ return new class extends Migration
             $table->string('pdf')->nullable();
             $table->string('image')->nullable();
             $table->integer('searches')->default(0);
-            $table->double('rate')->default(0);
             $table->foreign('library_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });

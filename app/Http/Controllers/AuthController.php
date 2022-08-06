@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\AdminInformationResource;
+use App\Http\Resources\CustomerInformationResource;
+use App\Http\Resources\UserResource;
 use App\Mail\Verify;
 use App\Models\Address;
 use App\Models\User;
@@ -12,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponder;
 use Exception;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -22,7 +26,15 @@ class AuthController extends Controller
 {
 
     use ApiResponder;
-    //
+
+    public function __construct()
+    {
+        $this->middleware('auth:api')->only(
+            'is_verified',
+            'profile',
+            'logout'
+        );
+    }
 
     public function register(Request $request)
     {
@@ -42,7 +54,7 @@ class AuthController extends Controller
         $user = new User();
         $user->role_id = $request->role_id;
         $user->email = $request->email;
-        $user->password = bcrypt($request->password);
+        $user->password = Crypt::encryptString($request->password);
         $user->save();
 
         $fcm_token = new FcmToken();
@@ -50,27 +62,19 @@ class AuthController extends Controller
         $fcm_token->fcm_token = $request->fcm_token;
         $fcm_token->save();
 
-        $accessToken = $user->createToken('authToken')->accessToken;
+        $access_token = $user->createToken('authToken')->accessToken;
 
         $verification_code = Str::random(30); //Generate verification code
         DB::table('verifications')->insert(['user_id' => $user->id, 'verification_code' => $verification_code]);
 
-        $subject = "Please verify your email address.";
         $email = $request->email;
-        // Mail::send(
-        //     'verifyAccount',
-        //     ['verification_code' => $verification_code],
-        //     function ($mail) use ($email, $subject) {
-        //         $mail->to('ramamhram093@gmail.com')->subject($subject);
-        //     }
-        // );
-        Mail::to('ramamhrama093@gmail.com')->send(new Verify($verification_code));
+        Mail::to($email)->send(new Verify($verification_code));
+
         return $this->okResponse(
-            [
-                'user' => $user,
-                'fcm_token' => $request->fcm_token,
-                'access token' => $accessToken
-            ],
+            new UserResource([
+                'register',
+                $access_token
+            ]),
             'Thanks for signing up! Please check your email to complete your registration.'
         );
     }
@@ -84,7 +88,7 @@ class AuthController extends Controller
 
             $user->update(['is_verified' => 1]);
             DB::table('verifications')->where('verification_code', $verification_code)->delete();
-            return view('success_verify')->with('msg','Thank you! Your account has been successfully verified..');
+            return view('success_verify')->with('msg', 'Thank you! Your account has been successfully verified..');
         }
     }
 
@@ -101,11 +105,12 @@ class AuthController extends Controller
         }
         //Check Email
         $user = User::where('email', $request->email)->first();
+        $user_password = Crypt::decryptString($user->password);
         //Check Password
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !($user_password == $request->password)) {
             return $this->unauthorizedResponse(null, 'Bad Creds');
         }
-        $token = $user->createToken('API Token')->accessToken;
+        $access_token = $user->createToken('API Token')->accessToken;
 
         $fcm_token = new FcmToken();
         $fcm_token->user_id = $user->id;
@@ -119,13 +124,13 @@ class AuthController extends Controller
             ]);
         }
 
-        $response = [
-            'user' => $user,
-            'token' => $token,
-            'fcm_token' => $request->fcm_token
-        ];
-
-        return $this->okResponse($response, 'logged in successfully');
+        return $this->okResponse(
+            new UserResource([
+                'login',
+                $access_token
+            ]),
+            'logged in successfully'
+        );
     }
 
     public function loginOrRegister(Request $request)
@@ -150,24 +155,25 @@ class AuthController extends Controller
             $newuser->provider_id = $request->provider_id;
             $newuser->role_id = $request->role_id;
             $newuser->save();
-            $token = $newuser->createToken('API Token')->accessToken;
+            $access_token = $newuser->createToken('API Token')->accessToken;
 
             $fcm_token = new FcmToken();
             $fcm_token->user_id = $newuser->id;
             $fcm_token->fcm_token = $request->fcm_token;
             $fcm_token->save();
 
-            return $this->okResponse([
-                'register' => 'true',
-                'user' => $newuser,
-                'toke' => $token,
-                'fcm_token' => $request->fcm_token
-            ], '');
+            return $this->okResponse(
+                new UserResource([
+                    'register',
+                    $access_token
+                ]),
+                ''
+            );
         }
         //else
         if ($request->provider_id == $user->provider_id) {
 
-            $token = $user->createToken('API Token')->accessToken;
+            $access_token = $user->createToken('API Token')->accessToken;
 
             $fcm_token = new FcmToken();
             $fcm_token->user_id = $user->id;
@@ -181,12 +187,15 @@ class AuthController extends Controller
                 ]);
             }
 
-            return $this->okResponse([
-                'login' => 'true',
-                'user' => $user,
-                'token' => $token,
-                'fcm_token' => $request->fcm_token
-            ], '');
+            return $this->okResponse(
+                new UserResource([
+                    'login',
+                    $user,
+                    $request->fcm_token,
+                    $access_token
+                ]),
+                ''
+            );
         } else {
             return $this->unauthorizedResponse(null, 'Bad Creds');
         }
@@ -203,7 +212,7 @@ class AuthController extends Controller
             return $this->badRequestResponse(null, $validator->errors()->toJson());
         }
 
-        FcmToken::where('user_id',Auth::id())->where('fcm_token', $request->fcm_token)->delete();
+        FcmToken::where('user_id', Auth::id())->where('fcm_token', $request->fcm_token)->delete();
 
         $user = $request->user();
 
@@ -221,15 +230,23 @@ class AuthController extends Controller
         $user = User::find(Auth::id());
         if ($user->role_id == 1) {
             $user_info = AdminInformation::where('user_id', Auth::id())->first();
+            return $this->okResponse(new AdminInformationResource(
+                $user_info
+            ), 'user Information');
         } else {
             $user_info = CustomerInformation::where('user_id', Auth::id())->first();
+            return $this->okResponse(new CustomerInformationResource(
+                $user_info
+            ), 'user Information');
         }
-
-        $response = [
-            'user' => $user,
-            'user_info' => $user_info
-        ];
-        return $this->okResponse($response, 'user Information');
     }
 
+    public function is_verified(){
+        $user = User::findOrFail(Auth::id());
+        if($user->is_verified == true){
+            return $this->okResponse(["verified"=> 1],"email verified successfully");
+        }else{
+            return response(["verified"=> 0],"The account has not yet been verified");
+        }
+    }
 }
